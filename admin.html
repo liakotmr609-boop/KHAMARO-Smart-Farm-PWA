@@ -44,11 +44,29 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function toast(s){el('toast').textContent=s;el('toast').classList.remove('hidden');setTimeout(()=>el('toast').classList.add('hidden'),3500)}
 function nice(v){if(v===true)return 'হ্যাঁ';if(v===false)return 'না';if(v&&typeof v==='object')return JSON.stringify(v);return v??''}
 async function ensureAdmin(){
- const {data:{session}}=await sb.auth.getSession();
- if(!session){el('loginView').classList.remove('hidden');el('appView').classList.add('hidden');return false}
- const role=session.user.app_metadata?.role;
- if(role!=='admin'){await sb.auth.signOut();el('loginMsg').textContent='এই অ্যাকাউন্টে Admin অনুমতি নেই। মালিককে Supabase App Metadata-তে role=admin সেট করতে হবে।';el('loginView').classList.remove('hidden');el('appView').classList.add('hidden');return false}
- el('who').textContent=session.user.email||'Admin';el('loginView').classList.add('hidden');el('appView').classList.remove('hidden');return true
+  const {data:{session},error}=await sb.auth.getSession();
+
+  if(error || !session){
+    el('loginView').classList.remove('hidden');
+    el('appView').classList.add('hidden');
+    return false;
+  }
+
+  const role=session.user.app_metadata?.role;
+
+  if(role!=='admin'){
+    el('loginMsg').textContent=
+      'লগইন হয়েছে, কিন্তু Admin অনুমতি পাওয়া যায়নি।';
+    await sb.auth.signOut();
+    el('loginView').classList.remove('hidden');
+    el('appView').classList.add('hidden');
+    return false;
+  }
+
+  el('who').textContent=session.user.email || 'Admin';
+  el('loginView').classList.add('hidden');
+  el('appView').classList.remove('hidden');
+  return true;
 }
 el('loginForm').addEventListener('submit',async e=>{e.preventDefault();el('loginMsg').textContent='লগইন হচ্ছে…';const {error}=await sb.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){el('loginMsg').textContent='লগইন ব্যর্থ: '+error.message;return}const ok=await ensureAdmin();if(ok)await go('dashboard')});
 el('logoutBtn').onclick=async()=>{await sb.auth.signOut();await ensureAdmin()};
