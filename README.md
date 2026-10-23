@@ -1,0 +1,1 @@
+# KHAMARO-Smart-Farm-PWA
